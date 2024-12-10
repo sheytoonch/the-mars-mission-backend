@@ -4,12 +4,11 @@
     "start": "node index.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.47.3",
     "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "sqlite3": "^5.1.7"
+    "express": "^4.19.2"
   },
   "files": [
-    "data/db/astronauts.db",
     "data/astronauts.json"
   ]
 }

@@ -1,72 +1,89 @@
-const db = require('../db/database');
+const { createClient } = require('@supabase/supabase-js');
+const supabase = require('../db/database');
 
-const getAllAstronauts = (callback) => {
-    db.all('SELECT * FROM astronauts', [], (err, astronauts) => {
-        callback(err, astronauts);
-    });
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+const getAllAstronauts = async (callback) => {
+    const { data, error } = await supabase
+        .from('astronauts')
+        .select('*');
+
+    if (error) {
+        callback(error, null);
+    } else {
+        callback(null, data);
+    }
 };
 
-const getAstronautById = (id, callback) => {
-    db.all('SELECT * FROM astronauts WHERE id = ?', [id], (err, astronauts) => {
-        callback(err, astronauts[0]);
-    });
+const getAstronautById = async (id, callback) => {
+    const { data, error } = await supabase
+        .from('astronauts')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error) {
+        callback(error, null);
+    } else {
+        callback(null, data);
+    }
 };
 
-const createAstronaut = (name, role, callback) => {
-    db.run('INSERT INTO astronauts (name, role) VALUES (?, ?)', [name, role], function (err) {
-        if (err) {
-            return callback(err, null);
-        }
-        const createdId = this.lastID; // must be function, not arrow function to witk with "this" keyword
-        getAstronautById(createdId, (err, astronaut) => {
-            if (err) {
-                return callback(err, null);
-            }
-            callback(null, astronaut);
-        });
-    });
+const createAstronaut = async (name, role, callback) => {
+    const { data, error } = await supabase
+        .from('astronauts')
+        .insert([{ name, role }])
+        .single();
+
+    if (error) {
+        callback(error, null);
+    } else {
+        callback(null, data);
+    }
 };
 
-const updateAstronaut = (id, { name, role }, callback) => {
-    getAstronautById(id, (err, astronaut) => {
-        if (err) {
-            return callback(err, null);
-        }
-        if (!astronaut) {
-            return callback({ status: 404, message: 'Astronaut not found' }, null);
-        }
+const updateAstronaut = async (id, { name, role }, callback) => {
+    const { data: existingAstronaut, error: getError } = await supabase
+        .from('astronauts')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-        const updatedName = name !== undefined ? name : astronaut.name;
-        const updatedRole = role !== undefined ? role : astronaut.role;
+    if (getError) {
+        return callback(getError, null);
+    }
 
-        const query = 'UPDATE astronauts SET name = ?, role = ? WHERE id = ?';
-        const params = [updatedName, updatedRole, id];
+    const updatedName = name !== undefined ? name : existingAstronaut.name;
+    const updatedRole = role !== undefined ? role : existingAstronaut.role;
 
-        db.run(query, params, function (err) {
-            if (err) {
-                return callback(err, null);
-            }
-            getAstronautById(id, (err, updatedAstronaut) => {
-                if (err) {
-                    return callback(err, null);
-                }
-                callback(null, updatedAstronaut);
-            });
-        });
-    });
+    const { data, error } = await supabase
+        .from('astronauts')
+        .update({ name: updatedName, role: updatedRole })
+        .eq('id', id)
+        .single();
+
+    if (error) {
+        callback(error, null);
+    } else {
+        callback(null, data);
+    }
 };
 
-const deleteAstronaut = (id, callback) => {
-    db.run('DELETE FROM astronauts WHERE id = ?', [id], function (err) {
-        if (err) {
-            return callback(err, null);
-        }
-        if (this.changes === 0) {
-            return callback({ status: 404, message: 'Astronaut not found with the provided ID.' }, null);
-        }
+const deleteAstronaut = async (id, callback) => {
+    const { data, error } = await supabase
+        .from('astronauts')
+        .delete()
+        .eq('id', id)
+        .single();
+
+    if (error) {
+        callback(error, null);
+    } else {
         callback(null, { message: 'Astronaut deleted successfully!' });
-    });
-}
+    }
+};
 
 module.exports = {
     getAllAstronauts,

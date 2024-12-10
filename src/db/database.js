@@ -1,54 +1,54 @@
-// '.verbose()' allows for stacking error logs.
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
+const path = require('path');
 
-const pathToAstronautsDB = path.join(__dirname, '../../db/astronauts.db');
-console.log("pathToAstronautsDB: ", pathToAstronautsDB);
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Path is related to where the Node.js process was started - root of the project
-// and not the file that is being executed. It can cause error if structure of the
-// project is changed. It is better to use '__dirname' as the reference point.
-const db = new sqlite3.Database(pathToAstronautsDB, (err) => {
-    if (err) {
-        console.error(err.message);
-    } else {
-        console.log(`Connected to the 'astronauts' database.`);
-    }
-});
-
-// This query runs every time the service is started and creates 'astronauts' table
-// if it's missing. Then fills it with default data.
-db.serialize(() => {
-    db.run(`
-        CREATE TABLE astronauts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            role TEXT
-        )
-    `, (err) => {
-        if (!err) {
-            console.log(`Table 'astronauts' created.`);
-            insertDefaultData();
-        }
-    });
-});
-
-// This function is hoisted, which means that it is actually at the top of the file
-// and can be called before it is defined.
-const insertDefaultData = () => {
+// Function to insert default data
+const insertDefaultData = async () => {
     const pathToAstronautsDefaultDataFile = path.join(__dirname, '../../data/astronauts.json');
     const jsonString = fs.readFileSync(pathToAstronautsDefaultDataFile);
     const astronauts = JSON.parse(jsonString);
 
-    // .prepare(query) prepares reusable query template
-    const insertStatement = db.prepare('INSERT INTO astronauts (name, role) VALUES (?, ?)');
-    astronauts.forEach(astronaut => {
-        insertStatement.run(astronaut.name, astronaut.role);
-    });
-    insertStatement.finalize(() => {
-        console.log(`Default data inserted into 'astronauts' table`);
-    });
+    for (const astronaut of astronauts) {
+        const { data, error } = await supabase
+            .from('astronauts')
+            .insert([{ name: astronaut.name, role: astronaut.role }]);
+
+        if (error) {
+            console.error('Error inserting default data:', error);
+        } else {
+            console.log('Default data inserted:', data);
+        }
+    }
 };
 
-module.exports = db;
+// Function to create the astronauts table if it doesn't exist
+const createAstronautsTable = async () => {
+    const { data, error } = await supabase
+        .from('astronauts')
+        .select('*')
+        .limit(1);
+
+    if (error && error.code === '42P01') { // Table does not exist
+        const { error: createError } = await supabase
+            .rpc('create_astronauts_table'); // Assuming you have a stored procedure to create the table
+
+        if (createError) {
+            console.error('Error creating astronauts table:', createError);
+        } else {
+            console.log('Table "astronauts" created.');
+            await insertDefaultData();
+        }
+    } else if (error) {
+        console.error('Error checking astronauts table:', error);
+    } else {
+        console.log('Table "astronauts" already exists.');
+    }
+};
+
+createAstronautsTable();
+
+module.exports = supabase;
