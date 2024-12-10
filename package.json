@@ -9,6 +9,7 @@
     "sqlite3": "^5.1.7"
   },
   "files": [
-    "db/astronauts.db"
+    "data/db/astronauts.db",
+    "data/astronauts.json"
   ]
 }
