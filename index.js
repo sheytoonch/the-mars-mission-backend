@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const port = 3001;
+const port = parseInt(process.env[PORT]) || 3001;
 const cors = require('cors');
 
 const genericRoutes = require('./src/routes/routes');
