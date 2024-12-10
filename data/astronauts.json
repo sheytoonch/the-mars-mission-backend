@@ -1,0 +1,12 @@
+[
+    {
+        "id": 1,
+        "name": "Dr. Alice",
+        "role": "Biologist"
+    },
+    {
+        "id": 2,
+        "name": "Mark Watney",
+        "role": "Engineer"
+    }
+]
