@@ -13,7 +13,7 @@ app.use('/api', genericRoutes);
 const printRoutes = (app) => {
   console.log('Available endpoints:');
   app._router.stack.forEach((middleware) => {
-    if (middleware.route) { // Routes registered directly on the app
+    if (middleware.route) { // Routes registered directly on the app 
       console.log(`${Object.keys(middleware.route.methods).join(', ').toUpperCase()} ${middleware.route.path}`);
     } else if (middleware.name === 'router') { // Router middleware
       middleware.handle.stack.forEach((handler) => {
