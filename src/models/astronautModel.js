@@ -1,10 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const supabase = require('../db/database');
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
 const getAllAstronauts = async (callback) => {
     const { data, error } = await supabase
         .from('astronauts')
