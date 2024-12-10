@@ -2,6 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
 
+// Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -27,28 +28,17 @@ const insertDefaultData = async () => {
 
 // Function to create the astronauts table if it doesn't exist
 const createAstronautsTable = async () => {
-    const { data, error } = await supabase
-        .from('astronauts')
-        .select('*')
-        .limit(1);
+    const { error } = await supabase.rpc('create_astronauts_table');
 
-    if (error && error.code === '42P01') { // Table does not exist
-        const { error: createError } = await supabase
-            .rpc('create_astronauts_table'); // Assuming you have a stored procedure to create the table
-
-        if (createError) {
-            console.error('Error creating astronauts table:', createError);
-        } else {
-            console.log('Table "astronauts" created.');
-            await insertDefaultData();
-        }
-    } else if (error) {
-        console.error('Error checking astronauts table:', error);
+    if (error) {
+        console.error('Error creating astronauts table:', error);
     } else {
-        console.log('Table "astronauts" already exists.');
+        console.log('Table "astronauts" created.');
+        await insertDefaultData();
     }
 };
 
+// Call the function to create the table and insert default data
 createAstronautsTable();
 
 module.exports = supabase;
